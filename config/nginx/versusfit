@@ -1,0 +1,43 @@
+server {
+        listen 443 ssl;
+        server_name versusfit.ru;
+
+        root /var/www/versusfit/src/versusfit-laravel/public;
+        index index.php;
+
+        access_log /var/log/nginx/versusfit-access.log;
+        error_log /var/log/nginx/versusfit-error.log;
+
+        add_header Strict-Transport-Security "max-age=31536000" always;
+
+        ssl_certificate /etc/nginx/ssl/nginx.crt;
+        ssl_certificate_key /etc/nginx/ssl/nginx.key;
+
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers HIGH:!aNULL:!MD5;
+
+        location ~* \.(css|js|png|jpg|jpeg|gif|ico|svg)$ {
+                expires 7d;
+                add_header Cache-Control "public, no-transform";
+                add_header Strict-Transport-Security "max-age=31536000" always;
+        }
+
+        location / { 
+            try_files $uri $uri/ /index.php?$query_string;
+        }
+
+        location ~ \.php$ {
+            fastcgi_pass unix:/var/run/php/php8.3-fpm.sock; 
+            fastcgi_index index.php; 
+            include fastcgi_params; 
+            fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name; 
+            fastcgi_param DOCUMENT_ROOT $realpath_root;
+        }
+}
+
+server {
+        listen 80;
+        server_name versusfit.ru;
+
+        return 301 https://$host$request_uri;
+}
