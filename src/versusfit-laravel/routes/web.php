@@ -21,6 +21,9 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('challenges', ChallengeController::class);
     Route::post('records', [RecordController::class, 'store'])->name('records.store');
+
+    Route::post('/challenges/{challenge}/join', [ChallengeController::class, 'join'])->name('challenges.join');
+    Route::post('/records', [RecordController::class, 'store'])->name('records.store');
 });
 
 Route::get('/auth/github', [GitHubController::class, 'redirect'])->name('auth.github');

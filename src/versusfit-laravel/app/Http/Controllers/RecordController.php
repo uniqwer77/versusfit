@@ -11,18 +11,20 @@ class RecordController extends Controller
     {
         $data = $request->validate([ 
             'challenge_id' => 'required|exists:challenges,id', 
-            'value' => 'required|integer|min:1', 
+            'value' => 'required|numeric|min:1', 
         ]); 
 
-        Record::updateOrCreate(
+        $record = Record::firstOrCreate(
             [
                 'challenge_id' => $data['challenge_id'],
                 'user_id'      => $request->user()->id,
             ],
             [
-                'value'        => $data['value'] 
+                'value'        => 0 
             ]
         );
+
+        $record->increment('value', $data['value']);
 
         return back()->with('success', 'Результат успешно обновлен!'); 
     }

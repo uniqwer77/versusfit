@@ -28,7 +28,7 @@ class Challenge extends Model
     }
 
     public function records(): HasMany
-    {
+    { 
         return $this->hasMany(Record::class);
     }
 }

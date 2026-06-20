@@ -45,7 +45,29 @@ class ChallengeController extends Controller
     public function show(Challenge $challenge)
     {
         $challenge->load('owner');
-        return view('challenges.show', compact('challenge'));
+
+        // $members = $challenge->members()
+        //     ->withSum(['records' => function ($query) use ($challenge) {
+        //         $query->where('challenge_id', $challenge->id);
+        //     }], 'value')
+        //     ->orderByDesc('records_sum_distance') 
+        //     ->get();
+
+        // $totalDistance = $challenge->records()->sum('value');
+
+        $members = $challenge->members()
+            ->withSum(['records' => function ($query) use ($challenge) {
+                $query->where('challenge_id', $challenge->id);
+            }], 'value') // Считаем сумму колонки `value`
+            ->orderByDesc('records_sum_value') // Сортируем по созданному Laravel полю `records_sum_value`
+            ->get();
+
+        $totalDistance = $challenge->records()->sum('value');
+
+
+        $isJoined = $challenge->members()->where('user_id', auth()->id())->exists();
+
+        return view('challenges.show', compact('challenge', 'members', 'totalDistance', 'isJoined'));
     }
 
     public function edit(Challenge $challenge)
@@ -80,5 +102,14 @@ class ChallengeController extends Controller
         
         return redirect()->route('challenges.index') 
             ->with('success', 'Челлендж удален');
+    }
+
+    public function join(Challenge $challenge)
+    {
+        if (!$challenge->members()->where('user_id', auth()->id())->exists()) {
+            $challenge->members()->attach(auth()->id());
+        }
+
+        return redirect()->back()->with('success', 'Вы присоединились к челленджу!');
     }
 }
