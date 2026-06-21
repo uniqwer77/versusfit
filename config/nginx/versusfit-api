@@ -3,7 +3,6 @@ server {
         server_name api.versusfit.ru;
 
         root /var/www/versusfit/src/versusfit-api;
-        index index.html;
 
         access_log /var/log/nginx/versusfit-api-access.log;
         error_log /var/log/nginx/versusfit-api-error.log;
@@ -12,6 +11,19 @@ server {
 
         ssl_certificate /etc/nginx/ssl/nginx.crt;
         ssl_certificate_key /etc/nginx/ssl/nginx.key;
+
+        location /ws {
+                proxy_pass http://127.0.0.1:8000;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "upgrade";
+                proxy_read_timeout 86400;
+
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+        }
 
         ssl_protocols TLSv1.2 TLSv1.3;
         ssl_ciphers HIGH:!aNULL:!MD5;
@@ -27,7 +39,7 @@ server {
 
 server {
         listen 80;
-        server_name api-versusfit.ru;
+        server_name api.versusfit.ru;
 
         return 301 https://$host$request_uri;
 }
