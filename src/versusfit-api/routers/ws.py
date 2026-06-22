@@ -1,6 +1,8 @@
 import json
 from typing import List
 from fastapi import APIRouter, WebSocket
+import asyncio
+import redis.asyncio as aioredis
 
 router = APIRouter()
 
@@ -26,9 +28,7 @@ class ConnectionManager:
         for ws in dead:
             self.disconnect(ws)
 
-
 manager = ConnectionManager()
-
 
 @router.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
