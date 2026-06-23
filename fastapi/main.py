@@ -8,7 +8,7 @@ from routers import leaderboard, ws
 from routers.ws import manager
 
 async def redis_subscriber():
-    redis = await aioredis.from_url('redis://127.0.0.1:6379', decode_responses=True)
+    redis = await aioredis.from_url("redis://redis:6379", decode_responses=True)
 
     pubsub = redis.pubsub()
     await pubsub.subscribe('laravel-database-challenge_updates', 'laravel-database-user.renamed')

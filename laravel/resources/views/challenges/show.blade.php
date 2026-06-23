@@ -97,7 +97,7 @@
                     })
                     .catch(error => console.error('Ошибка сети:', error));
                 }
-                </script>
+            </script>
         </div>
     </div>
 </x-app-layout>

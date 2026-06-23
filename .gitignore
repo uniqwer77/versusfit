@@ -4,3 +4,7 @@ node_modules/
 venv/
 __pycache__/
 *.pyc
+*.key
+nginx/certs/*.key
+*.log
+.env

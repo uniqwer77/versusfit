@@ -101,12 +101,12 @@ class ChallengeController extends Controller
             $challenge->members()->attach(auth()->id());
         }
 
-        // Redis::publish('challenge_updates', json_encode([
-        //     'type' => 'challenge_update',
-        //     'challenge_id' => $challenge->challenge_id,
-        //     'user_id' => auth()->id(),
-        //     'name' => $request->user()->name,
-        // ]));
+        Redis::publish('challenge_updates', json_encode([
+            'type' => 'challenge_update',
+            'challenge_id' => $challenge->challenge_id,
+            'user_id' => auth()->id(),
+            'name' => $request->user()->name,
+        ]));
 
         return redirect()->back()->with('success', 'Вы присоединились к челленджу!');
     }
