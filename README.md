@@ -1,14 +1,17 @@
 VersusFit
+ 
 Сервис для проведения спортивных челленджей с отслеживанием прогресса участников в реальном времени. Пользователи регистрируются, создают челленджи, присоединяются к ним и фиксируют пройденную дистанцию. Общая доска лидеров обновляется мгновенно без перезагрузки страницы благодаря WebSocket-уведомлениям.
 
 Архитектура
+ 
 Laravel – монолитное веб-приложение (Blade + JS). Отвечает за серверный рендеринг страниц, аутентификацию (Breeze + GitHub OAuth), CRUD челленджей и запись результатов в MySQL. При значимых действиях публикует события в Redis.
 FastAPI – микросервис, предоставляющий REST API для получения данных о челленджах и WebSocket-эндпоинт для реалтайм-обновлений. Подписан на канал Redis и рассылает обновления всем подключённым клиентам.
 Nginx - точка входа с терминированием HTTPS. Маршрутизирует запросы по доменам: `versusfit.ru` → Laravel, `api.versusfit.ru` → FastAPI. Проксирует WebSocket-соединения.
 MySQL - основное хранилище данных.
 Redis - брокер сообщений для Pub/Sub.
-
+ 
 Схема архитектуры
+```text
 ┌─────────────┐
 │ Браузер     │
 └──────┬──────┘
@@ -35,23 +38,38 @@ Redis - брокер сообщений для Pub/Sub.
 ┌───────┐ ┌───────┐           ┌───────────────────────┐
 │ MySQL │ │ Redis │◄──────────┤   WebSocket-клиенты   │
 └───────┘ └───────┘ Pub/Sub   └───────────────────────┘
-
+```
+ 
 Инструкция запуска (локально)
-git clone git@github.com:uniqwer77/versusfit.git
-cd versusfit
-cp .env.example .env
-cp laravel/.env.example laravel/.env
-Отредактируйте laravel/.env
-Домены в файле hosts 
-Сгенерируйте самоподписанные SSL-сертификаты
-docker compose up -d
-docker compose exec laravel php artisan migrate --seed
 
-Структура базы данных
-Основные таблицы (связи заданы внешними ключами, индексы на полях challenge_id, user_id в таблицах records и challenge_members):
+  
+1) git clone git@github.com:uniqwer77/versusfit.git 
+ 
+2) cd versusfit 
+ 
+3) cp .env.example .env
+  
+4) cp laravel/.env.example laravel/.env
 
-Таблицы
-users Пользователи (имя, email, пароль, github_id).
-challenges Челленджи: название, описание, даты, создатель (owner_id → users.id).
-challenge_members Участники челленджей (связь многие-ко-многим: user_id, challenge_id).
-records	Результаты: пройденная дистанция (value), связи с user_id и challenge_id.
+5) Отредактируйте laravel/.env
+
+6) Домены в файле hosts 
+
+7) Сгенерируйте самоподписанные SSL-сертификаты
+
+8) docker compose up -d
+
+9) docker compose exec laravel php artisan migrate --seed
+
+## Структура базы данных
+
+Основные таблицы (связи заданы внешними ключами, индексы на полях `challenge_id`, `user_id` в таблицах `records` и `challenge_members`):
+
+| Таблица             | Описание |
+|---------------------|----------|
+| `users`             | Пользователи (имя, email, пароль, github_id). |
+| `challenges`        | Челленджи: название, описание, даты, создатель (`owner_id` → `users.id`). |
+| `challenge_members` | Участники челленджей (связь многие-ко-многим: `user_id`, `challenge_id`). |
+| `records`           | Результаты: пройденная дистанция (`value`), связи с `user_id` и `challenge_id`. |
+
+Служебные таблицы Laravel (кеш, сессии, очереди) также присутствуют.
