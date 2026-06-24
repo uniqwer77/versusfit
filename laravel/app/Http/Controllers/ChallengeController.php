@@ -103,9 +103,10 @@ class ChallengeController extends Controller
 
         Redis::publish('challenge_updates', json_encode([
             'type' => 'challenge_update',
-            'challenge_id' => $challenge->challenge_id,
+            'challenge_id' => $challenge->id,
             'user_id' => auth()->id(),
             'name' => $request->user()->name,
+            'challenge_value' => 0,
         ]));
 
         return redirect()->back()->with('success', 'Вы присоединились к челленджу!');

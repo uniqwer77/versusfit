@@ -6,52 +6,61 @@ from fastapi.middleware.cors import CORSMiddleware
 import redis.asyncio as aioredis
 from routers import leaderboard, ws
 from routers.ws import manager
+import logging
+from fastapi import WebSocket
+
+logger = logging.getLogger("uvicorn")
 
 async def redis_subscriber():
-    redis = await aioredis.from_url("redis://redis:6379", decode_responses=True)
-
-    pubsub = redis.pubsub()
-    await pubsub.subscribe('laravel-database-challenge_updates', 'laravel-database-user.renamed')
-
     while True:
-        message = await pubsub.get_message(timeout=1)
+        pubsub = None
+        try:
+            redis = await aioredis.from_url("redis://redis:6379", decode_responses=True)
+            pubsub = redis.pubsub()
+            
+            channels = [
+                'laravel-database-challenge_updates',
+            ]
+            await pubsub.subscribe(*channels)
+            logger.info(f"Redis subscriber started, listening to: {channels}")
 
-        if message is None:
-            await asyncio.sleep(0.01)
-            continue
+            async for message in pubsub.listen():
+                try:
+                    if message['type'] != 'message':
+                        continue
 
-        if message['type'] != 'message':
-            continue
+                    channel = message['channel']
+                    data = json.loads(message['data'])
 
-        channel = message['channel']
-        data = json.loads(message['data'])
+                    if channel == 'laravel-database-challenge_updates':
+                        await manager.broadcast({
+                            'type': 'leaderboard_update',
+                            'challenge_id': data.get('challenge_id'),
+                            'user_id': data.get('user_id'),
+                            'name': data.get('name'),
+                            'challenge_value': data.get('challenge_value')
+                        })
 
-        if channel == 'laravel-database-challenge_updates':
-            required_fields = ['challenge_id', 'user_id', 'name', 'challenge_value']
-            await manager.broadcast({
-                'type': 'leaderboard_update',
-                'challenge_id': data['challenge_id'],
-                'user_id': data['user_id'],
-                'name': data['name'],
-                'challenge_value': data['challenge_value']
-            })
+                except json.JSONDecodeError as e:
+                    logger.error(f"Invalid JSON from Redis channel {channel}: {e}")
+                except Exception as e:
+                    logger.error(f"Error processing message from channel {channel}: {e}")
 
-        elif channel == 'laravel-database-user.renamed':
-            required_fields = ['id', 'new_name']
-            await manager.broadcast({
-                'type': 'user_renamed',
-                'user_id': data['id'],
-                'new_name': data['new_name']
-            })
-        
-        elif channel == 'laravel-database-challenge_update':
-            required_fields = ['challenge_id', 'user_id', 'name']
-            await manager.broadcast({
-                'type': 'user_joined',
-                'challenge_id': data['challenge_id'],
-                'user_id': data['user_id'],
-                'name': data['name']
-            })
+        except aioredis.ConnectionError as e:
+            logger.error(f"Redis connection error: {e}. Reconnecting in 2 seconds...")
+        except Exception as e:
+            logger.error(f"Unexpected error in redis_subscriber: {e}. Reconnecting in 2 seconds...")
+        finally:
+            if pubsub is not None:
+                try:
+                    await pubsub.unsubscribe(*channels)
+                except Exception:
+                    pass
+                try:
+                    await pubsub.close()
+                except Exception:
+                    pass
+            await asyncio.sleep(2)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
